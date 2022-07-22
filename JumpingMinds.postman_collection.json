@@ -127,7 +127,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:8000/fetch_all_requests?elevator_id=1",
+							"raw": "http://127.0.0.1:8000/fetch_all_requests?elevator_id=53",
 							"protocol": "http",
 							"host": [
 								"127",
@@ -142,7 +142,7 @@
 							"query": [
 								{
 									"key": "elevator_id",
-									"value": "1"
+									"value": "53"
 								}
 							]
 						}
@@ -153,7 +153,7 @@
 					"header": [
 						{
 							"key": "Date",
-							"value": "Mon, 18 Jul 2022 02:12:23 GMT"
+							"value": "Fri, 22 Jul 2022 16:40:54 GMT"
 						},
 						{
 							"key": "Server",
@@ -177,7 +177,7 @@
 						},
 						{
 							"key": "Content-Length",
-							"value": "1048"
+							"value": "349"
 						},
 						{
 							"key": "X-Content-Type-Options",
@@ -193,7 +193,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "[\n    {\n        \"id\": 9,\n        \"requested_floor\": 4,\n        \"is_completed\": true,\n        \"created_at\": \"2022-07-18T01:59:27.385985Z\",\n        \"updated_at\": \"2022-07-18T01:59:27.386024Z\",\n        \"elevator\": 1\n    },\n    {\n        \"id\": 10,\n        \"requested_floor\": 8,\n        \"is_completed\": true,\n        \"created_at\": \"2022-07-18T01:59:54.729959Z\",\n        \"updated_at\": \"2022-07-18T01:59:54.729985Z\",\n        \"elevator\": 1\n    },\n    {\n        \"id\": 11,\n        \"requested_floor\": 2,\n        \"is_completed\": false,\n        \"created_at\": \"2022-07-18T01:59:58.844646Z\",\n        \"updated_at\": \"2022-07-18T01:59:58.844678Z\",\n        \"elevator\": 1\n    },\n    {\n        \"id\": 12,\n        \"requested_floor\": 14,\n        \"is_completed\": true,\n        \"created_at\": \"2022-07-18T02:00:02.716288Z\",\n        \"updated_at\": \"2022-07-18T02:00:02.716311Z\",\n        \"elevator\": 1\n    },\n    {\n        \"id\": 13,\n        \"requested_floor\": 18,\n        \"is_completed\": true,\n        \"created_at\": \"2022-07-18T02:00:07.645266Z\",\n        \"updated_at\": \"2022-07-18T02:00:07.645301Z\",\n        \"elevator\": 1\n    },\n    {\n        \"id\": 14,\n        \"requested_floor\": 11,\n        \"is_completed\": true,\n        \"created_at\": \"2022-07-18T02:00:31.289846Z\",\n        \"updated_at\": \"2022-07-18T02:00:31.289870Z\",\n        \"elevator\": 1\n    },\n    {\n        \"id\": 15,\n        \"requested_floor\": 1,\n        \"is_completed\": false,\n        \"created_at\": \"2022-07-18T02:08:16.011056Z\",\n        \"updated_at\": \"2022-07-18T02:08:16.011096Z\",\n        \"elevator\": 1\n    }\n]"
+					"body": "{\n    \"success\": true,\n    \"data\": {\n        \"elevator_requests\": [\n            {\n                \"id\": 24,\n                \"requested_floor\": 1,\n                \"is_completed\": false,\n                \"created_at\": \"2022-07-22T16:38:11.686501Z\",\n                \"updated_at\": \"2022-07-22T16:38:11.686531Z\",\n                \"elevator\": 53\n            },\n            {\n                \"id\": 25,\n                \"requested_floor\": 1,\n                \"is_completed\": false,\n                \"created_at\": \"2022-07-22T16:39:05.184370Z\",\n                \"updated_at\": \"2022-07-22T16:39:05.184392Z\",\n                \"elevator\": 53\n            }\n        ]\n    }\n}"
 				}
 			]
 		},

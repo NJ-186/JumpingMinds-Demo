@@ -2,7 +2,6 @@ from django.urls import path
 
 from .views import *
 
-
 urlpatterns = [
     path('add_elevators', AddElevators.as_view(), name='add_elevators'),
 

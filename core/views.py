@@ -1,130 +1,86 @@
-from django.http import HttpResponse
-
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import status
 
-from .models import Elevator, ElevatorRequests
-from .serializers import ElevatorSerializer, ElevatorRequestsSerializer
+from .views_helper import ValidationChecks, ResponseHelper
 from .constants import *
-from .helper import *
+from .impl import ElevatorImpl
 
 # Create your views here.
 
 
 class AddElevators(APIView):
 
-    def _validate_request(self, elevator_count):
-        res = {}
-
-        if not elevator_count:
-            res = {
-                "error_message": "elevator_count is a required field."
-            }
-
-        return res
-
     def post(self, request):
         try:
-            elevator_count = int(request.data.get('elevator_count'))
+            elevator_count = request.data.get('elevator_count')
 
-            request_validation_errors = self._validate_request(elevator_count)
+            validation_check = ValidationChecks()
+            request_validation_errors = validation_check.validate_add_elevator_request(elevator_count)
 
             if request_validation_errors:
-                return Response(
-                    request_validation_errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                res = ResponseHelper.get_error_response(request_validation_errors)
 
-            elevators = get_all_elevators()
-
-            if elevators:
-                res = {
-                    "error_message": "It looks like you have already updated the elevator_count."
-                }
                 return Response(
                     res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            create_elevators_initially(elevator_count)
+            res_object = ElevatorImpl.add_elevators(elevator_count=int(elevator_count))
 
-            res = {
-                "success": True
-            }
+            if res_object.get('error_message'):
+                return Response(
+                    res_object,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            return Response(res, status=status.HTTP_201_CREATED)
+            res_object = ResponseHelper.get_success_response()
+
+            return Response(
+                res_object,
+                status=status.HTTP_201_CREATED
+            )
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
-            return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            res = ResponseHelper.get_error_response(str(e))
 
+            return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class CallElevator(APIView):
 
-    def _validate_request(self, elevator_id, requested_floor):
-        res = {}
-
-        if not elevator_id:
-            res = {
-                "error_message": "elevator_id is a required field."
-            }
-
-        elif not validate_elevator_object(elevator_id):
-            res = {
-                "error_message": "invalid elevator_id."
-            }
-
-        elif not requested_floor:
-            res = {
-                "error_message": "requested_floor is a required field."
-            }
-
-        elif requested_floor not in range(0, FLOORS_COUNT):
-            res = {
-                "error_message": "invalid requested_floor."
-            }
-
-        return res
-
     def post(self, request):
         try:
             elevator_id = request.data.get('elevator_id')
-            requested_floor = int(request.data.get('requested_floor'))
+            requested_floor = request.data.get('requested_floor')
 
-            request_validation_errors = self._validate_request(elevator_id, requested_floor)
+            validation_check = ValidationChecks()
+            request_validation_errors = validation_check.validate_call_elevator_request(elevator_id, requested_floor)
 
             if request_validation_errors:
+                res = ResponseHelper.get_error_response(request_validation_errors)
+
                 return Response(
-                    request_validation_errors,
+                    res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            is_elevator_down = check_if_elevator_is_down(elevator_id)
+            res_manager = ElevatorImpl(elevator_id=int(elevator_id), requested_floor=int(requested_floor))
+            res_object = res_manager.call_elevator()
 
-            if is_elevator_down:
+            if res_object.get('error_message'):
                 return Response(
-                    is_elevator_down,
+                    res_object,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            is_initial_request = update_cache_for_elevator_request(elevator_id, requested_floor)
+            res_object = ResponseHelper.get_success_response()
 
-            update_db_for_elevator_request(elevator_id, requested_floor, is_initial_request)
-
-            res = {
-                "success": True
-            }
-
-            return Response(res, status=status.HTTP_200_OK)
+            return Response(res_object, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
+            res = ResponseHelper.get_error_response(str(e))
+
             return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -134,30 +90,32 @@ class FetchAllRequests(APIView):
         try:
             elevator_id = request.GET.get('elevator_id')
 
-            request_validation_errors = validate_get_request(elevator_id)
+            request_validation_errors = ValidationChecks.validate_elevator_id(elevator_id)
 
             if request_validation_errors:
+                res = ResponseHelper.get_error_response(request_validation_errors)
+
                 return Response(
-                    request_validation_errors,
+                    res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            is_elevator_down = check_if_elevator_is_down(elevator_id)
+            res_manager = ElevatorImpl(elevator_id=elevator_id)
+            res_object = res_manager.get_all_requests_for_elevator()
 
-            if is_elevator_down:
+            if res_object.get('error_message'):
                 return Response(
-                    is_elevator_down,
+                    res_object,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            res = get_all_requests_for_elevator(elevator_id)
+            res_object = ResponseHelper.get_success_response(res_object)
 
-            return Response(res, status=status.HTTP_200_OK)
+            return Response(res_object, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
+            res = ResponseHelper.get_error_response(str(e))
+
             return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -167,30 +125,32 @@ class FetchNextDestination(APIView):
         try:
             elevator_id = request.GET.get('elevator_id')
 
-            request_validation_errors = validate_get_request(elevator_id)
+            request_validation_errors = ValidationChecks.validate_elevator_id(elevator_id)
 
             if request_validation_errors:
+                res = ResponseHelper.get_error_response(request_validation_errors)
+
                 return Response(
-                    request_validation_errors,
+                    res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            
+            res_manager = ElevatorImpl(elevator_id=elevator_id)
+            res_object = res_manager.get_elevator_next_destination()
 
-            is_elevator_down = check_if_elevator_is_down(elevator_id)
-
-            if is_elevator_down:
+            if res_object.get('error_message'):
                 return Response(
-                    is_elevator_down,
+                    res_object,
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            
+            res_object = ResponseHelper.get_success_response(res_object)
 
-            res = get_elevator_next_destination(elevator_id)
-
-            return Response(res, status=status.HTTP_200_OK)
+            return Response(res_object, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
+            res = ResponseHelper.get_error_response(str(e))
+
             return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -200,32 +160,33 @@ class FetchDirection(APIView):
         try:
             elevator_id = request.GET.get('elevator_id')
 
-            request_validation_errors = validate_get_request(elevator_id)
+            request_validation_errors = ValidationChecks.validate_elevator_id(elevator_id)
 
             if request_validation_errors:
+                res = ResponseHelper.get_error_response(request_validation_errors)
+
                 return Response(
-                    request_validation_errors,
+                    res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            is_elevator_down = check_if_elevator_is_down(elevator_id)
+            res_manager = ElevatorImpl(elevator_id=elevator_id)
+            res_object = res_manager.get_elevator_direction()
 
-            if is_elevator_down:
+            if res_object.get('error_message'):
                 return Response(
-                    is_elevator_down,
+                    res_object,
                     status=status.HTTP_400_BAD_REQUEST
                 )
+            
+            res_object = ResponseHelper.get_success_response(res_object)
 
-            res = get_elevator_direction(elevator_id)
-
-            return Response(res, status=status.HTTP_200_OK)
+            return Response(res_object, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
-            return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            res = ResponseHelper.get_error_response(str(e))
 
+            return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class MarkElevatorDown(APIView):
@@ -234,106 +195,70 @@ class MarkElevatorDown(APIView):
         try:
             elevator_id = request.GET.get('elevator_id')
 
-            request_validation_errors = validate_get_request(elevator_id)
+            request_validation_errors = ValidationChecks.validate_elevator_id(elevator_id)
 
             if request_validation_errors:
-                return Response(
-                    request_validation_errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                res = ResponseHelper.get_error_response(request_validation_errors)
 
-            is_elevator_down = check_if_elevator_is_down(elevator_id)
-
-            if is_elevator_down:
-                res = {
-                    "error_message": "Elevator is already under maintenance"
-                }
                 return Response(
                     res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            mark_elevator_down(elevator_id)
+            res_manager = ElevatorImpl(elevator_id=elevator_id)
+            res_object = res_manager.mark_elevator_down()
 
-            res = {
-                "success": True
-            }
+            if res_object.get('error_message'):
+                return Response(
+                    res_object,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            return Response(res, status=status.HTTP_200_OK)
+            res_object = ResponseHelper.get_success_response(res_object)
+
+            return Response(res_object, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
+            res = ResponseHelper.get_error_response(str(e))
+
             return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class OpenOrCloseDoor(APIView):
-
-    def _validate_request(self, elevator_id, door_state):
-        res = {}
-
-        if not elevator_id:
-            res = {
-                "error_message": "elevator_id is a required field."
-            }
-
-        elif not validate_elevator_object(elevator_id):
-            res = {
-                "error_message": "invalid elevator_id."
-            }
-
-        elif door_state not in [OPEN, CLOSE]:
-            res = {
-                "error_message": "invalid door_state."
-            }
-
-        return res
 
     def post(self, request):
         try:
             elevator_id = request.data.get('elevator_id')
             door_state = request.data.get('door_state')
 
-            request_validation_errors = self._validate_request(elevator_id, door_state)
+            validation_check = ValidationChecks()
+            request_validation_errors = validation_check.validate_open_or_close_door_request(
+                elevator_id,
+                door_state
+            )
 
             if request_validation_errors:
-                return Response(
-                    request_validation_errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                res = ResponseHelper.get_error_response(request_validation_errors)
 
-            is_elevator_down = check_if_elevator_is_down(elevator_id)
-
-            if is_elevator_down:
-                res = {
-                    "error_message": "Elevator is already under maintenance"
-                }
                 return Response(
                     res,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            if door_state == OPEN:
-                res = open_elevator(elevator_id)
+            res_manager = ElevatorImpl(elevator_id=elevator_id, door_state=door_state)
+            res_object = res_manager.open_or_close_door()
 
-            else:
-                res = close_elevator(elevator_id)
-
-            if res:
+            if res_object.get('error_message'):
                 return Response(
-                    res,
+                    res_object,
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            res = {
-                "success": True
-            }
+            res_object = ResponseHelper.get_success_response(res_object)
 
-            return Response(res, status=status.HTTP_200_OK)
+            return Response(res_object, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = {
-                "Exception" : str(e)
-            }
+            res = ResponseHelper.get_error_response(str(e))
+
             return Response(res, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
